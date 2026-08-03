@@ -1,3 +1,4 @@
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 from src.analyzer import (
@@ -6,16 +7,31 @@ from src.analyzer import (
 )
 from src.parser import load_events
 
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-LOG_FILE = PROJECT_ROOT / "data" / "sample_auth.log"
+DEFAULT_LOG_FILE = PROJECT_ROOT / "data" / "sample_auth.log"
 FAILED_LOGIN_THRESHOLD = 5
 MINIMUM_TARGETED_USERS = 2
 
 
+def parse_arguments() -> Namespace:
+    parser = ArgumentParser(
+        description="Analyze authentication logs for suspicious activity."
+    )
+    parser.add_argument(
+        "log_file",
+        nargs="?",
+        type=Path,
+        default=DEFAULT_LOG_FILE,
+        help="Path to the authentication log file.",
+    )
+
+    return parser.parse_args()
 
 
 def main() -> None:
-    events = load_events(LOG_FILE)
+    arguments = parse_arguments()
+    events = load_events(arguments.log_file)
 
     suspicious_ips = find_suspicious_ips(
         events,
@@ -25,7 +41,6 @@ def main() -> None:
         events,
         MINIMUM_TARGETED_USERS,
     )
-    
 
     print(f"Loaded {len(events)} authentication events.")
 
@@ -36,10 +51,12 @@ def main() -> None:
         )
 
     for ip_address, usernames in multi_user_ips.items():
-            sorted_usernames = ", ".join(sorted(usernames))
-            print(
-                f"ALERT: {ip_address} targeted multiple users: "
-                f"{sorted_usernames}."
-            )
+        sorted_usernames = ", ".join(sorted(usernames))
+        print(
+            f"ALERT: {ip_address} targeted multiple users: "
+            f"{sorted_usernames}."
+        )
+
+
 if __name__ == "__main__":
     main()
