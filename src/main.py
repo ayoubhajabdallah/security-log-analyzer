@@ -4,21 +4,18 @@ from src.analyzer import (
     find_ips_targeting_multiple_users,
     find_suspicious_ips,
 )
-
+from src.parser import load_events
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LOG_FILE = PROJECT_ROOT / "data" / "sample_auth.log"
 FAILED_LOGIN_THRESHOLD = 5
 MINIMUM_TARGETED_USERS = 2
 
-def parse_log_line(line: str) -> tuple[str, str, str, str]:
-    timestamp, ip_address, username, result = line.split(",")
-    return timestamp, ip_address, username, result
+
 
 
 def main() -> None:
-    log_lines = LOG_FILE.read_text(encoding="utf-8").splitlines()
-    events = [parse_log_line(line) for line in log_lines if line.strip()]
+    events = load_events(LOG_FILE)
 
     suspicious_ips = find_suspicious_ips(
         events,
