@@ -1,3 +1,4 @@
+import json
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 
@@ -46,6 +47,11 @@ def parse_arguments() -> Namespace:
         default=DEFAULT_MINIMUM_TARGETED_USERS,
         help="Number of targeted usernames required to raise an alert.",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the analysis result as JSON.",
+    )
 
     return parser.parse_args()
 
@@ -72,6 +78,20 @@ def main() -> None:
         events,
         arguments.minimum_users,
     )
+
+    if arguments.json:
+        report = {
+            "log_file": str(arguments.log_file),
+            "total_events": len(events),
+            "suspicious_ips": suspicious_ips,
+            "multi_user_ips": {
+                ip_address: sorted(usernames)
+                for ip_address, usernames in multi_user_ips.items()
+            },
+        }
+
+        print(json.dumps(report, indent=2))
+        return
 
     print(f"Loaded {len(events)} authentication events.")
 
