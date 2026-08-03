@@ -10,8 +10,8 @@ from src.parser import load_events
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_LOG_FILE = PROJECT_ROOT / "data" / "sample_auth.log"
-FAILED_LOGIN_THRESHOLD = 5
-MINIMUM_TARGETED_USERS = 2
+DEFAULT_FAILED_LOGIN_THRESHOLD = 5
+DEFAULT_MINIMUM_TARGETED_USERS = 2
 
 
 def parse_arguments() -> Namespace:
@@ -24,6 +24,18 @@ def parse_arguments() -> Namespace:
         type=Path,
         default=DEFAULT_LOG_FILE,
         help="Path to the authentication log file.",
+    )
+    parser.add_argument(
+        "--failed-threshold",
+        type=int,
+        default=DEFAULT_FAILED_LOGIN_THRESHOLD,
+        help="Number of failed logins required to raise an alert.",
+    )
+    parser.add_argument(
+        "--minimum-users",
+        type=int,
+        default=DEFAULT_MINIMUM_TARGETED_USERS,
+        help="Number of targeted usernames required to raise an alert.",
     )
 
     return parser.parse_args()
@@ -45,11 +57,11 @@ def main() -> None:
 
     suspicious_ips = find_suspicious_ips(
         events,
-        FAILED_LOGIN_THRESHOLD,
+        arguments.failed_threshold,
     )
     multi_user_ips = find_ips_targeting_multiple_users(
         events,
-        MINIMUM_TARGETED_USERS,
+        arguments.minimum_users,
     )
 
     print(f"Loaded {len(events)} authentication events.")
