@@ -31,12 +31,18 @@ def parse_arguments() -> Namespace:
 
 def main() -> None:
     arguments = parse_arguments()
+
     try:
         events = load_events(arguments.log_file)
     except FileNotFoundError:
         raise SystemExit(
             f"Error: log file not found: {arguments.log_file}"
         ) from None
+    except ValueError as error:
+        raise SystemExit(
+            f"Error: invalid log format: {error}"
+        ) from None
+
     suspicious_ips = find_suspicious_ips(
         events,
         FAILED_LOGIN_THRESHOLD,
