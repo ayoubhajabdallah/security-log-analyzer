@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 
 from src.analyzer import (
@@ -14,6 +14,15 @@ DEFAULT_FAILED_LOGIN_THRESHOLD = 5
 DEFAULT_MINIMUM_TARGETED_USERS = 2
 
 
+def positive_integer(value: str) -> int:
+    number = int(value)
+
+    if number < 1:
+        raise ArgumentTypeError("value must be a positive integer")
+
+    return number
+
+
 def parse_arguments() -> Namespace:
     parser = ArgumentParser(
         description="Analyze authentication logs for suspicious activity."
@@ -27,13 +36,13 @@ def parse_arguments() -> Namespace:
     )
     parser.add_argument(
         "--failed-threshold",
-        type=int,
+        type=positive_integer,
         default=DEFAULT_FAILED_LOGIN_THRESHOLD,
         help="Number of failed logins required to raise an alert.",
     )
     parser.add_argument(
         "--minimum-users",
-        type=int,
+        type=positive_integer,
         default=DEFAULT_MINIMUM_TARGETED_USERS,
         help="Number of targeted usernames required to raise an alert.",
     )
