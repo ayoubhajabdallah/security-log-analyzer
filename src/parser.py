@@ -8,24 +8,36 @@ def parse_log_line(line: str) -> Event:
 
     if len(parts) != 4:
         raise ValueError(
-            f"Invalid log line: expected 4 fields, got {len(parts)}"
+            f"expected 4 fields, got {len(parts)}"
         )
 
     timestamp, ip_address, username, result = parts
 
     if result not in {"SUCCESS", "FAILED"}:
         raise ValueError(
-            f"Invalid login result: {result}"
+            f"invalid login result: {result}"
         )
 
     return timestamp, ip_address, username, result
 
 
 def load_events(log_file: Path) -> list[Event]:
-    log_lines = log_file.read_text(encoding="utf-8").splitlines()
+    events: list[Event] = []
 
-    return [
-        parse_log_line(line)
-        for line in log_lines
-        if line.strip()
-    ]
+    for line_number, line in enumerate(
+        log_file.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
+        if not line.strip():
+            continue
+
+        try:
+            event = parse_log_line(line)
+        except ValueError as error:
+            raise ValueError(
+                f"line {line_number}: {error}"
+            ) from error
+
+        events.append(event)
+
+    return events
