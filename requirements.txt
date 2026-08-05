@@ -16,9 +16,12 @@ httptools==0.8.0
 httpx==0.28.1
 idna==3.18
 Jinja2==3.1.6
+joblib==1.5.3
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
+narwhals==2.24.0
+numpy==2.5.1
 pydantic==2.13.4
 pydantic-extra-types==2.11.1
 pydantic-settings==2.14.2
@@ -30,9 +33,12 @@ PyYAML==6.0.3
 rich==15.0.0
 rich-toolkit==0.20.3
 rignore==0.8.1
+scikit-learn==1.9.0
+scipy==1.18.0
 sentry-sdk==2.66.1
 shellingham==1.5.4
 starlette==1.4.1
+threadpoolctl==3.6.0
 typer==0.27.1
 typing-inspection==0.4.2
 typing_extensions==4.16.0
