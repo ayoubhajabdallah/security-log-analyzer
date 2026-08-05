@@ -2,12 +2,8 @@ import json
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 
-from src.analyzer import (
-    find_brute_force_windows,
-    find_ips_targeting_multiple_users,
-    find_suspicious_ips,
-)
 from src.parser import load_events
+from src.report import build_report
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -93,53 +89,48 @@ def main() -> None:
             f"Error: invalid log format: {error}"
         ) from None
 
-    suspicious_ips = find_suspicious_ips(
-        events,
-        arguments.failed_threshold,
-    )
-
-    multi_user_ips = find_ips_targeting_multiple_users(
-        events,
-        arguments.minimum_users,
-    )
-
-    brute_force_ips = find_brute_force_windows(
-        events,
-        arguments.window_threshold,
-        arguments.window_minutes,
+    report = build_report(
+        events=events,
+        failed_threshold=arguments.failed_threshold,
+        minimum_users=arguments.minimum_users,
+        window_threshold=arguments.window_threshold,
+        window_minutes=arguments.window_minutes,
     )
 
     if arguments.json:
-        report = {
+        json_report = {
             "log_file": str(arguments.log_file),
-            "total_events": len(events),
-            "suspicious_ips": suspicious_ips,
-            "multi_user_ips": {
-                ip_address: sorted(usernames)
-                for ip_address, usernames in multi_user_ips.items()
-            },
-            "brute_force_ips": brute_force_ips,
+            **report,
         }
 
-        print(json.dumps(report, indent=2))
+        print(json.dumps(json_report, indent=2))
         return
 
-    print(f"Loaded {len(events)} authentication events.")
+    print(
+        f"Loaded {report['total_events']} "
+        "authentication events."
+    )
 
-    for ip_address, failed_attempts in suspicious_ips.items():
+    for ip_address, failed_attempts in report[
+        "suspicious_ips"
+    ].items():
         print(
             f"ALERT: {ip_address} has "
             f"{failed_attempts} failed login attempts."
         )
 
-    for ip_address, usernames in multi_user_ips.items():
-        sorted_usernames = ", ".join(sorted(usernames))
+    for ip_address, usernames in report[
+        "multi_user_ips"
+    ].items():
+        sorted_usernames = ", ".join(usernames)
         print(
             f"ALERT: {ip_address} targeted multiple users: "
             f"{sorted_usernames}."
         )
 
-    for ip_address, failed_attempts in brute_force_ips.items():
+    for ip_address, failed_attempts in report[
+        "brute_force_ips"
+    ].items():
         print(
             f"ALERT: {ip_address} made "
             f"{failed_attempts} failed attempts within "
