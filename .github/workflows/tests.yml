@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   test:
+    name: Run automated tests
     runs-on: ubuntu-latest
 
     steps:
@@ -28,3 +29,43 @@ jobs:
 
       - name: Run tests
         run: python -m unittest discover -s tests -v
+
+  docker:
+    name: Verify Docker application
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v7
+
+      - name: Build Docker image
+        run: docker build -t security-log-analyzer:ci .
+
+      - name: Start Docker container
+        run: |
+          docker run \
+            --detach \
+            --name security-log-analyzer-ci \
+            --publish 8000:8000 \
+            security-log-analyzer:ci
+
+      - name: Check application health
+        run: |
+          for attempt in {1..15}; do
+            if curl --fail http://127.0.0.1:8000/health; then
+              echo "Application is healthy."
+              exit 0
+            fi
+
+            echo "Waiting for the application..."
+            sleep 2
+          done
+
+          echo "Application did not become healthy."
+          docker logs security-log-analyzer-ci
+          exit 1
+
+      - name: Stop Docker container
+        if: always()
+        run: docker rm --force security-log-analyzer-ci || true
