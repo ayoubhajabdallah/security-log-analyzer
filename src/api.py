@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.responses import HTMLResponse
 
 from src.analyzer import Event
+from src.dashboard import DASHBOARD_HTML
 from src.parser import parse_log_line
 from src.report import AnalysisReport, build_report
 
@@ -12,6 +14,11 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard() -> str:
+    return DASHBOARD_HTML
 
 
 @app.get("/health")
