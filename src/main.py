@@ -3,6 +3,7 @@ from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from pathlib import Path
 
 from src.analyzer import (
+    find_brute_force_windows,
     find_ips_targeting_multiple_users,
     find_suspicious_ips,
 )
@@ -11,15 +12,25 @@ from src.parser import load_events
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_LOG_FILE = PROJECT_ROOT / "data" / "sample_auth.log"
+
 DEFAULT_FAILED_LOGIN_THRESHOLD = 5
 DEFAULT_MINIMUM_TARGETED_USERS = 2
+DEFAULT_WINDOW_THRESHOLD = 3
+DEFAULT_WINDOW_MINUTES = 2
 
 
 def positive_integer(value: str) -> int:
-    number = int(value)
+    try:
+        number = int(value)
+    except ValueError:
+        raise ArgumentTypeError(
+            "value must be a positive integer"
+        ) from None
 
     if number < 1:
-        raise ArgumentTypeError("value must be a positive integer")
+        raise ArgumentTypeError(
+            "value must be a positive integer"
+        )
 
     return number
 
@@ -39,13 +50,25 @@ def parse_arguments() -> Namespace:
         "--failed-threshold",
         type=positive_integer,
         default=DEFAULT_FAILED_LOGIN_THRESHOLD,
-        help="Number of failed logins required to raise an alert.",
+        help="Total failed logins required to raise an alert.",
     )
     parser.add_argument(
         "--minimum-users",
         type=positive_integer,
         default=DEFAULT_MINIMUM_TARGETED_USERS,
-        help="Number of targeted usernames required to raise an alert.",
+        help="Targeted usernames required to raise an alert.",
+    )
+    parser.add_argument(
+        "--window-threshold",
+        type=positive_integer,
+        default=DEFAULT_WINDOW_THRESHOLD,
+        help="Failed logins inside the time window required for an alert.",
+    )
+    parser.add_argument(
+        "--window-minutes",
+        type=positive_integer,
+        default=DEFAULT_WINDOW_MINUTES,
+        help="Length of the brute-force detection window in minutes.",
     )
     parser.add_argument(
         "--json",
@@ -74,9 +97,16 @@ def main() -> None:
         events,
         arguments.failed_threshold,
     )
+
     multi_user_ips = find_ips_targeting_multiple_users(
         events,
         arguments.minimum_users,
+    )
+
+    brute_force_ips = find_brute_force_windows(
+        events,
+        arguments.window_threshold,
+        arguments.window_minutes,
     )
 
     if arguments.json:
@@ -88,6 +118,7 @@ def main() -> None:
                 ip_address: sorted(usernames)
                 for ip_address, usernames in multi_user_ips.items()
             },
+            "brute_force_ips": brute_force_ips,
         }
 
         print(json.dumps(report, indent=2))
@@ -106,6 +137,13 @@ def main() -> None:
         print(
             f"ALERT: {ip_address} targeted multiple users: "
             f"{sorted_usernames}."
+        )
+
+    for ip_address, failed_attempts in brute_force_ips.items():
+        print(
+            f"ALERT: {ip_address} made "
+            f"{failed_attempts} failed attempts within "
+            f"{arguments.window_minutes} minutes."
         )
 
 
