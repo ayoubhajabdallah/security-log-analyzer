@@ -3,7 +3,7 @@
 ![Tests](https://github.com/ayoubhajabdallah/security-log-analyzer/actions/workflows/tests.yml/badge.svg)
 
 A Python security application that analyzes authentication logs and detects suspicious login activity using configurable security rules and machine-learning anomaly detection.
-
+![Security Log Analyzer Dashboard](docs/dashboard.png)
 The project provides:
 
 - A command-line interface
