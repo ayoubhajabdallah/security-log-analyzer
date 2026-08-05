@@ -1,6 +1,7 @@
 import unittest
 
 from src.analyzer import (
+    find_brute_force_windows,
     find_ips_targeting_multiple_users,
     find_suspicious_ips,
 )
@@ -28,6 +29,7 @@ class TestFindSuspiciousIps(unittest.TestCase):
         result = find_suspicious_ips(events, threshold=3)
 
         self.assertEqual(result, {})
+
     def test_detects_ip_targeting_multiple_users(self) -> None:
         events = [
             ("time1", "203.0.113.42", "admin", "FAILED"),
@@ -37,14 +39,51 @@ class TestFindSuspiciousIps(unittest.TestCase):
         ]
 
         result = find_ips_targeting_multiple_users(
-        events,
-        minimum_users=2,
-    )
+            events,
+            minimum_users=2,
+        )
 
         self.assertEqual(
             result,
             {"203.0.113.42": {"admin", "root"}},
-    )
+        )
+
+    def test_detects_failures_inside_time_window(self) -> None:
+        events = [
+            (
+                "2026-08-02T16:00:00Z",
+                "203.0.113.42",
+                "admin",
+                "FAILED",
+            ),
+            (
+                "2026-08-02T16:00:30Z",
+                "203.0.113.42",
+                "admin",
+                "FAILED",
+            ),
+            (
+                "2026-08-02T16:01:00Z",
+                "203.0.113.42",
+                "root",
+                "FAILED",
+            ),
+            (
+                "2026-08-02T16:10:00Z",
+                "203.0.113.42",
+                "admin",
+                "FAILED",
+            ),
+        ]
+
+        result = find_brute_force_windows(
+            events,
+            threshold=3,
+            window_minutes=2,
+        )
+
+        self.assertEqual(result, {"203.0.113.42": 3})
+
 
 if __name__ == "__main__":
     unittest.main()
