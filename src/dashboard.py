@@ -22,16 +22,8 @@ DASHBOARD_HTML = """
         }
 
         .container {
-            width: min(900px, 92%);
+            width: min(1000px, 92%);
             margin: 40px auto;
-        }
-
-        .header {
-            margin-bottom: 28px;
-        }
-
-        h1 {
-            margin-bottom: 8px;
         }
 
         .subtitle {
@@ -39,28 +31,32 @@ DASHBOARD_HTML = """
         }
 
         .card {
-            background: #1e293b;
+            margin-bottom: 24px;
+            padding: 24px;
             border: 1px solid #334155;
             border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
+            background: #1e293b;
         }
 
-        .form-grid {
+        .form-grid,
+        .summary-grid {
             display: grid;
             grid-template-columns: repeat(
                 auto-fit,
-                minmax(180px, 1fr)
+                minmax(170px, 1fr)
             );
             gap: 16px;
+        }
+
+        .form-grid {
             margin-top: 18px;
         }
 
         label {
             display: block;
             margin-bottom: 6px;
-            font-size: 14px;
             color: #cbd5e1;
+            font-size: 14px;
         }
 
         input {
@@ -70,10 +66,6 @@ DASHBOARD_HTML = """
             border-radius: 7px;
             background: #0f172a;
             color: #f8fafc;
-        }
-
-        input[type="file"] {
-            padding: 8px;
         }
 
         button {
@@ -87,28 +79,15 @@ DASHBOARD_HTML = """
             cursor: pointer;
         }
 
-        button:hover {
-            background: #1d4ed8;
-        }
-
         button:disabled {
             background: #475569;
             cursor: not-allowed;
         }
 
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(
-                auto-fit,
-                minmax(160px, 1fr)
-            );
-            gap: 14px;
-        }
-
         .summary-item {
-            background: #0f172a;
-            border-radius: 9px;
             padding: 16px;
+            border-radius: 9px;
+            background: #0f172a;
         }
 
         .summary-label {
@@ -123,11 +102,16 @@ DASHBOARD_HTML = """
         }
 
         .alert {
-            border-left: 4px solid #ef4444;
-            background: #321c24;
-            border-radius: 7px;
-            padding: 14px;
             margin-top: 12px;
+            padding: 14px;
+            border-left: 4px solid #ef4444;
+            border-radius: 7px;
+            background: #321c24;
+        }
+
+        .ml-alert {
+            border-left-color: #a855f7;
+            background: #2d1b3d;
         }
 
         .success {
@@ -139,6 +123,11 @@ DASHBOARD_HTML = """
             display: none;
         }
 
+        .error {
+            margin-top: 16px;
+            color: #fca5a5;
+        }
+
         pre {
             overflow-x: auto;
             padding: 16px;
@@ -146,20 +135,16 @@ DASHBOARD_HTML = """
             background: #020617;
             color: #cbd5e1;
         }
-
-        .error {
-            color: #fca5a5;
-            margin-top: 16px;
-        }
     </style>
 </head>
 
 <body>
     <main class="container">
-        <header class="header">
+        <header>
             <h1>Security Log Analyzer</h1>
             <p class="subtitle">
-                Upload authentication logs and detect suspicious activity.
+                Detect suspicious authentication activity using
+                security rules and machine-learning anomaly detection.
             </p>
         </header>
 
@@ -167,18 +152,16 @@ DASHBOARD_HTML = """
             <h2>Analyze a log file</h2>
 
             <form id="analysis-form">
-                <div>
-                    <label for="log-file">
-                        Authentication log
-                    </label>
-                    <input
-                        id="log-file"
-                        name="file"
-                        type="file"
-                        accept=".log,.txt"
-                        required
-                    >
-                </div>
+                <label for="log-file">
+                    Authentication log
+                </label>
+
+                <input
+                    id="log-file"
+                    type="file"
+                    accept=".log,.txt"
+                    required
+                >
 
                 <div class="form-grid">
                     <div>
@@ -243,37 +226,22 @@ DASHBOARD_HTML = """
 
             <div class="summary-grid">
                 <div class="summary-item">
-                    <div class="summary-label">
-                        Total events
-                    </div>
-                    <div
-                        id="total-events"
-                        class="summary-value"
-                    >
-                        0
-                    </div>
+                    <div class="summary-label">Total events</div>
+                    <div id="total-events" class="summary-value">0</div>
                 </div>
 
                 <div class="summary-item">
                     <div class="summary-label">
                         Failed-login alerts
                     </div>
-                    <div
-                        id="failed-alerts"
-                        class="summary-value"
-                    >
-                        0
-                    </div>
+                    <div id="failed-alerts" class="summary-value">0</div>
                 </div>
 
                 <div class="summary-item">
                     <div class="summary-label">
                         Multi-user alerts
                     </div>
-                    <div
-                        id="multi-user-alerts"
-                        class="summary-value"
-                    >
+                    <div id="multi-user-alerts" class="summary-value">
                         0
                     </div>
                 </div>
@@ -282,12 +250,16 @@ DASHBOARD_HTML = """
                     <div class="summary-label">
                         Brute-force alerts
                     </div>
-                    <div
-                        id="brute-force-alerts"
-                        class="summary-value"
-                    >
+                    <div id="brute-force-alerts" class="summary-value">
                         0
                     </div>
+                </div>
+
+                <div class="summary-item">
+                    <div class="summary-label">
+                        ML anomaly alerts
+                    </div>
+                    <div id="ml-alerts" class="summary-value">0</div>
                 </div>
             </div>
 
@@ -301,32 +273,33 @@ DASHBOARD_HTML = """
     <script>
         const form = document.getElementById("analysis-form");
         const button = document.getElementById("analyze-button");
+        const results = document.getElementById("results");
+        const alertList = document.getElementById("alert-list");
         const errorMessage = document.getElementById(
             "error-message"
         );
-        const results = document.getElementById("results");
-        const alertList = document.getElementById("alert-list");
 
-        function createAlert(message, isSuccess = false) {
-            const alert = document.createElement("div");
-            alert.className = isSuccess
-                ? "alert success"
-                : "alert";
-            alert.textContent = message;
-            alertList.appendChild(alert);
+        function createAlert(message, extraClass = "") {
+            const element = document.createElement("div");
+            element.className = `alert ${extraClass}`;
+            element.textContent = message;
+            alertList.appendChild(element);
         }
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            errorMessage.classList.add("hidden");
             results.classList.add("hidden");
+            errorMessage.classList.add("hidden");
             button.disabled = true;
             button.textContent = "Analyzing...";
 
-            const fileInput = document.getElementById("log-file");
+            const file = document.getElementById(
+                "log-file"
+            ).files[0];
+
             const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
+            formData.append("file", file);
 
             const parameters = new URLSearchParams({
                 failed_threshold:
@@ -386,6 +359,12 @@ DASHBOARD_HTML = """
                     data.brute_force_ips
                 ).length;
 
+                document.getElementById(
+                    "ml-alerts"
+                ).textContent = Object.keys(
+                    data.ml_anomalies
+                ).length;
+
                 alertList.innerHTML = "";
 
                 for (
@@ -418,10 +397,23 @@ DASHBOARD_HTML = """
                     );
                 }
 
+                for (
+                    const [ipAddress, anomaly]
+                    of Object.entries(data.ml_anomalies)
+                ) {
+                    createAlert(
+                        `${ipAddress} shows unusual ML behavior. ` +
+                        `Score: ${anomaly.anomaly_score}, ` +
+                        `failures: ${anomaly.failed_attempts}, ` +
+                        `users: ${anomaly.unique_users}.`,
+                        "ml-alert"
+                    );
+                }
+
                 if (alertList.children.length === 0) {
                     createAlert(
                         "No suspicious activity detected.",
-                        true
+                        "success"
                     );
                 }
 

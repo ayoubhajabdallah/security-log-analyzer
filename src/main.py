@@ -122,10 +122,10 @@ def main() -> None:
     for ip_address, usernames in report[
         "multi_user_ips"
     ].items():
-        sorted_usernames = ", ".join(usernames)
+        joined_usernames = ", ".join(usernames)
         print(
             f"ALERT: {ip_address} targeted multiple users: "
-            f"{sorted_usernames}."
+            f"{joined_usernames}."
         )
 
     for ip_address, failed_attempts in report[
@@ -135,6 +135,16 @@ def main() -> None:
             f"ALERT: {ip_address} made "
             f"{failed_attempts} failed attempts within "
             f"{arguments.window_minutes} minutes."
+        )
+
+    for ip_address, anomaly in report[
+        "ml_anomalies"
+    ].items():
+        print(
+            f"ML ALERT: {ip_address} shows unusual behavior "
+            f"(score: {anomaly['anomaly_score']}, "
+            f"failures: {anomaly['failed_attempts']}, "
+            f"users: {anomaly['unique_users']})."
         )
 
 

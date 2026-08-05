@@ -6,6 +6,7 @@ from src.analyzer import (
     find_ips_targeting_multiple_users,
     find_suspicious_ips,
 )
+from src.ml_analyzer import AnomalyResult, find_ml_anomalies
 
 
 class AnalysisReport(TypedDict):
@@ -13,6 +14,7 @@ class AnalysisReport(TypedDict):
     suspicious_ips: dict[str, int]
     multi_user_ips: dict[str, list[str]]
     brute_force_ips: dict[str, int]
+    ml_anomalies: dict[str, AnomalyResult]
 
 
 def build_report(
@@ -38,6 +40,8 @@ def build_report(
         window_minutes,
     )
 
+    ml_anomalies = find_ml_anomalies(events)
+
     return {
         "total_events": len(events),
         "suspicious_ips": suspicious_ips,
@@ -46,4 +50,5 @@ def build_report(
             for ip_address, usernames in multi_user_ips.items()
         },
         "brute_force_ips": brute_force_ips,
+        "ml_anomalies": ml_anomalies,
     }
