@@ -9,6 +9,19 @@ client = TestClient(app)
 
 
 class TestSecurityLogAnalyzerApi(unittest.TestCase):
+    def test_dashboard_is_available(self) -> None:
+        response = client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "Security Log Analyzer",
+            response.text,
+        )
+        self.assertIn(
+            'id="analysis-form"',
+            response.text,
+        )
+
     def test_health_check(self) -> None:
         response = client.get("/health")
 
